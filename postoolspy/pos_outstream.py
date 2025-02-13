@@ -1,11 +1,13 @@
 from .gnss_stream import gnss_interface
 from .imu_stream import imu_interface
 from .gnss_nmea import nmea_parser
-from .gnss_corrections import gnss_corrections
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import time
 import socket
+import json
+import websocket
+import threading
 
 class positiong_outstream(gnss_interface):
     '''
@@ -55,28 +57,122 @@ class positioning_file(positiong_outstream):
         '''
         self._file.close()
 
-class pos_udpserver(gnss_interface,imu_interface,gnss_corrections):
+class udp_server(gnss_interface,imu_interface):
 
     def __init__(self,dest):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.dest = dest
 
     def new_imu(self,t,msg):
-        msg = b'%.6f' % t + msg
-        #print(msg,self.dest)
-        self.sock.sendto(msg,self.dest)
+        # msg = b'%.6f' % t + msg
+
+        msg = {
+            "type": "imu",
+            "data": msg
+        }
+
+        print(msg,self.dest)
+        self.sock.sendto(json.dumps(msg).encode('utf-8'), self.dest)
 
     def new_gnss(self,t,msg):
-        msg = b'%.6f' % t + msg
+        if isinstance(msg, bytes):
+            msg = msg.decode('utf-8')
+        # msg = b'%.6f' % t + msg
+        msg = {
+            "type": "gps",
+            "data": msg
+        }
         print(msg,self.dest)
-        self.sock.sendto(msg,self.dest)
-
-    def new_rtcm(self,msg):
-        self.sock.sendto(msg,self.dest)
+        self.sock.sendto(json.dumps(msg).encode('utf-8'), self.dest)
 
     def close(self):
         self.sock.close()
+class websocket_client(gnss_interface, imu_interface):
 
+    def __init__(self, dest: tuple):
+        if not isinstance(dest, tuple) or len(dest) != 2:
+            raise ValueError("dest must be a tuple of (host, port)")
+        self.uri = f'ws://{dest[0]}:{dest[1]}'
+        self.websocket = None
+        self.connected = False
+        self.receive_thread = None
+
+    def connect(self):
+        try:
+            self.websocket = websocket.create_connection(self.uri)
+            self.connected = True
+            print(f"Connected to WebSocket server at {self.uri}")
+             # Start a thread to receive messages
+            self.receive_thread = threading.Thread(target=self.receive_messages, daemon=True)
+            self.receive_thread.start()
+        except Exception as e:
+            print(f"Failed to connect to WebSocket server at {self.uri}: {e}")
+
+    def new_imu(self, t, msg):
+        if (not self.connected) or (not self.websocket) or (not self.websocket.connected):
+            self.connect()
+
+        if isinstance(msg, bytes):
+            msg = msg.decode('utf-8')
+
+
+        imu_msg = {
+            "type": "imu",
+            "time": t,
+            "data": msg
+        }
+
+        try:
+            print(f"Sending IMU data: {imu_msg}")
+            self.websocket.send(json.dumps(imu_msg))
+            print("IMU data sent successfully")
+        except Exception as e:
+            print(f"Failed to send IMU data: {e}")
+            self.connected = False
+
+    def new_gnss(self, t, msg):
+        if (not self.connected) or (not self.websocket) or (not self.websocket.connected):
+            self.connect()
+
+        if isinstance(msg, bytes):
+            msg = msg.decode('utf-8')
+
+        gnss_msg = {
+            "type": "gps",
+            "time": t,
+            "data": msg
+        }
+
+        try:
+            print(f"Sending GNSS data: {gnss_msg}")
+            self.websocket.send(json.dumps(gnss_msg))
+            print("GNSS data sent successfully")
+        except Exception as e:
+            print(f"Failed to send GNSS data: {e}")
+            self.websocket = None
+
+    def receive_messages(self):
+        try:
+            while self.connected:
+                message = self.websocket.recv()
+                # Handle the message if necessary
+                # Pings are handled automatically when recv() is called
+        except websocket.WebSocketConnectionClosedException:
+            print("WebSocket connection closed")
+            self.connected = False
+        except Exception as e:
+            print(f"Error receiving messages: {e}")
+            self.connected = False
+
+    def close(self):
+        self.connected = False
+        if self.websocket:
+            try:
+                self.websocket.close()
+                print(f"Disconnected from WebSocket server at {self.uri}")
+            except Exception as e:
+                print(f"Failed to close WebSocket connection: {e}")
+                
 class mavlink_server(gnss_interface,imu_interface):
     '''
     mission planner mavlink server replication object
