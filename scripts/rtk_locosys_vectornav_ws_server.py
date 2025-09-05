@@ -22,20 +22,20 @@ async def main():
     if settings == None:
         sys.exit(1)
 
-    # rtcm = ntrip_corrections(settings['corrections']['connection']['address'],
-    #                         settings['corrections']['connection']['mountpoint'],
-    #                         settings['corrections']['connection']['user'],
-    #                         settings['corrections']['connection']['password'],
-    #                         settings['corrections']['connection']['port'],
-    #                         org='EMSG')
+    rtcm = ntrip_corrections(settings['corrections']['connection']['address'],
+                            settings['corrections']['connection']['mountpoint'],
+                            settings['corrections']['connection']['user'],
+                            settings['corrections']['connection']['password'],
+                            settings['corrections']['connection']['port'],
+                            org='EMSG')
 
-    # imu = vectornav_imu(settings['imu']['connection']['port'],
-                        # settings['imu']['connection']['baud'])
+    imu = vectornav_imu(settings['imu']['connection']['port'],
+                        settings['imu']['connection']['baud'])
     
 
     gps = locosys_gnss(settings['gnss']['connection']['port'],
                        settings['gnss']['connection']['baud'],
-                       rate=2)
+                       rate=10)
 
     
     dest = (settings['output']['connection']['address'],
@@ -43,12 +43,12 @@ async def main():
     serv = websocket_client(dest)
 
      
-    # rtcm.add_listener(gps)
-    # imu.add_listener(serv)
+    rtcm.add_listener(gps)
+    imu.add_listener(serv)
     gps.add_listener(serv)
 
-    # rtcm.start()
-    # imu.start()
+    rtcm.start()
+    imu.start()
     gps.start()
 
     try:
@@ -58,8 +58,8 @@ async def main():
         print('User terminated')
 
     gps.stop()
-    # imu.stop()
-    # rtcm.stop()
+    imu.stop()
+    rtcm.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())

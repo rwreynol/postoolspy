@@ -12,24 +12,26 @@ import os
 def main():
     settings = None
 
-    file = os.path.join(os.path.dirname(__file__),'ulema-h.yaml')
+    file = os.path.join(os.path.dirname(__file__),'settings.yaml')
         
     with open(file,'r') as file:
         settings = yaml.safe_load(file)
         print(settings)
 
     if settings == None:
+        print('why')
         sys.exit(1)
 
     rtcm = ntrip_corrections(settings['corrections']['connection']['address'],
                             settings['corrections']['connection']['mountpoint'],
                             settings['corrections']['connection']['user'],
                             settings['corrections']['connection']['password'],
+                            
                             settings['corrections']['connection']['port'],
                             org='EMSG')
 
-    imu = vectornav_imu(settings['imu']['connection']['port'],
-                        settings['imu']['connection']['baud'])
+    #imu = vectornav_imu(settings['imu']['connection']['port'],
+    #                    settings['imu']['connection']['baud'])
     
 
     gps = locosys_gnss(settings['gnss']['connection']['port'],
@@ -41,11 +43,11 @@ def main():
     serv = udp_server(dest)
     
     rtcm.add_listener(gps)
-    imu.add_listener(serv)
+    #imu.add_listener(serv)
     gps.add_listener(serv)
 
     rtcm.start()
-    imu.start()
+    #imu.start()
     gps.start()
 
     try:
@@ -55,7 +57,7 @@ def main():
         print('User terminated')
 
     gps.stop()
-    imu.stop()
+    #imu.stop()
     rtcm.stop()
 
 if __name__ == '__main__':

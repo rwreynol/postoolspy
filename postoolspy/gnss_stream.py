@@ -80,7 +80,8 @@ class gnss(Thread,corrections_interface):
         '''
         new_rtcm method to override
         '''
-        self._rtcmRecvd += len(msg)
+        #self._rtcmRecvd += len(msg)
+        print(msg)
         self.write(msg)
 
     def connect(self):
@@ -257,6 +258,8 @@ class locosys_gnss(serial_gnss):
         rate = min(max(100,rate),1000)
 
         # initialize all commands
+        cmds=[]
+        '''
         cmds = ['PAIR410,1', # enable SBAS
                 'PAIR400,1', # DGPS = RTCM
                 'PAIR104,1', # dual band
@@ -271,6 +274,7 @@ class locosys_gnss(serial_gnss):
                 'PAIR062,8,0',
                 'PAIR050,%d' % rate # rate
                 ]
+                '''
         
         # send all commands
         for cmd in cmds:
@@ -292,4 +296,4 @@ class locosys_gnss(serial_gnss):
         '''
         writes the message to the serial port
         '''
-        super().write(msg + b'\r\n')
+        super().write(msg)# + b'\r\n')
