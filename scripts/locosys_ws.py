@@ -1,13 +1,11 @@
-from postoolspy.gnss_stream import serial_gnss
+from postoolspy.gnss_stream import locosys_gnss
 from postoolspy.pos_outstream import websocket_client
-
 
 import time
 import yaml
+import sys
 import asyncio
 from pathlib import Path
-import sys
-
 async def main():
     p = Path(__file__).resolve()
     while True:
@@ -20,18 +18,16 @@ async def main():
             sys.exit("❌ settings.yaml not found anywhere above this script")
         p = p.parent
 
-
-    gps = serial_gnss(settings['gnss']['connection']['port'],
-                       settings['gnss']['connection']['baud'])
+    gps = locosys_gnss(settings['gnss']['connection']['port'],
+                       settings['gnss']['connection']['baud'],
+                       rate=10)
 
     
     dest = (settings['output']['connection']['address'],
         settings['output']['connection']['port'])
-    
     serv = websocket_client(dest)
 
     gps.add_listener(serv)
-
     gps.start()
 
     try:

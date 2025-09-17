@@ -297,3 +297,18 @@ class locosys_gnss(serial_gnss):
         writes the message to the serial port
         '''
         super().write(msg)# + b'\r\n')
+
+class global_sat(serial_gnss):
+
+    def setup(self):
+        '''
+        writes the message to the serial port
+        '''
+        super().setup()# + b'\r\n')
+
+
+    def write(self,msg):
+        '''
+        writes the message to the serial port
+        '''
+        super().write(msg)# + b'\r\n')

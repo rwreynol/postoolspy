@@ -28,3 +28,8 @@ This allows you call call scripts from the terminal
 
 ### SLAM
 1) None
+
+### Conda Environment
+Use `set CONDA_FORCE_32BIT=1` to force 32 bit installs for vectornav.
+Install `vnpy` with the vectornav archive.
+`conda create -n postoolspy python=3.10.4 websocket-client pyubx2 pyserial`
