@@ -14,10 +14,10 @@ async def main():
         cand = p.parent / "rf-tools-settings.yaml"
         if cand.is_file():
             with open(cand, "r", encoding="utf-8") as f:
-                settings = yaml.safe_load(f)['postoolspy'] or sys.exit("❌ settings.yaml has no `postoolspy` field.")
+                settings = yaml.safe_load(f)['postoolspy'] or sys.exit("settings.yaml has no `postoolspy` field.")
             break
         if p.parent == p:
-            sys.exit("❌ settings.yaml not found anywhere above this script")
+            sys.exit("settings.yaml not found anywhere above this script")
         p = p.parent
 
 
