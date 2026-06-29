@@ -1,4 +1,4 @@
-# from vnpy import *
+from vnpy import *
 import time
 from threading import Thread
 
